@@ -60,14 +60,16 @@ def calcular_metricas(
         'Parámetro': [
             'Pérdida del cliente (%)',
             'Comisión total por servicio (%)',
-            'Ganancia total (CLP)',
-            'Margen utilidad (%)'
+            'Margen utilidad (%)',
+            'Ganancia total (CLP)'
+            
         ],
         'Valor': [
             round(porcentaje_perdida_cliente_objetivo * 100, 2),
             round(porcentaje_perdida, 2),  # ahora en %
-            round(ganancia_total, 2),
-            round(margen_requerido * 100, 2)
+            round(margen_requerido * 100, 2),
+            round(ganancia_total, 2)
+            
         ]
     })
 
