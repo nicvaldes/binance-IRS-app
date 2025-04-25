@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Calculadora TUCUPOENDOLAR.COM", layout="centered")
+st.set_page_config(page_title="TUCUPOENDOLAR.COM", layout="centered")
 
-st.title("💸 Calculadora de Conversión USD a CLP")
+st.title("💸 Calculadora TUCUPOENDOLAR.COM")
 st.markdown("""
 Simula la conversión de USD a CLP para que el cliente reciba el 85% del monto solicitado convertido al valor del dólar del minuto.
 """)
