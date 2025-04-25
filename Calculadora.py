@@ -1,33 +1,28 @@
 import streamlit as st
-import requests
 import pandas as pd
 
-# Obtener promedio de los 10 mejores precios P2P de USDT a CLP
-def obtener_precio_promedio_p2p_usdt_clp():
-    url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
-    payload = {
-        "asset": "USDT",
-        "fiat": "CLP",
-        "tradeType": "SELL",
-        "page": 1,
-        "rows": 10,
-        "payTypes": []
-    }
-    headers = {
-        "Content-Type": "application/json"
-    }
-    response = requests.post(url, json=payload, headers=headers)
-    data = response.json()
-    precios = [float(item['adv']['price']) for item in data['data']]
-    return sum(precios) / len(precios) if precios else 0
+st.set_page_config(page_title="Calculadora de Conversión USD a CLP", layout="centered")
 
-# Función de cálculo principal
-def calcular_metricas(
+st.title("💸 Calculadora de Conversión USD a CLP")
+st.markdown("""
+Esta calculadora te permite simular la conversión de USD a CLP considerando comisiones fijas y un porcentaje fijo de pérdida para el cliente.
+""")
+
+# Entradas del usuario
+monto_usd = st.number_input("Monto Solictado (USD)", min_value=1.0, value=100.0, step=1.0)
+tipo_cambio_usdt_clp = st.number_input("Valor actual del dólar", min_value=500.0, value=940.0, step=1.0)
+
+# Parámetros fijos
+comision_porcentual = 0.0549
+tarifa_binance_usdt = 2
+porcentaje_perdida_cliente_objetivo = 0.15
+
+def calcular_margen_para_perdida_objetivo(
     monto_usd,
-    comision_porcentual=0.0549,
-    tarifa_binance_usdt=2,
-    tipo_cambio_usdt_clp=900,
-    porcentaje_perdida_cliente_objetivo=0.15
+    comision_porcentual,
+    tarifa_binance_usdt,
+    tipo_cambio_usdt_clp,
+    porcentaje_perdida_cliente_objetivo
 ):
     comision_aplicada = monto_usd * comision_porcentual
     perdida_total_usd = comision_aplicada + tarifa_binance_usdt
@@ -36,67 +31,51 @@ def calcular_metricas(
     monto_neto_usdt = monto_usd - perdida_total_usd
     monto_clp_obtenido = monto_neto_usdt * tipo_cambio_usdt_clp
     valor_referencia_clp = monto_usd * tipo_cambio_usdt_clp
-
     pago_cliente_deseado = valor_referencia_clp * (1 - porcentaje_perdida_cliente_objetivo)
     margen_requerido = 1 - (pago_cliente_deseado / monto_clp_obtenido)
     ganancia_total = monto_clp_obtenido - pago_cliente_deseado
 
-    # Tabla 1
-    tabla1 = pd.DataFrame({
+    resultados = pd.DataFrame({
         'Parámetro': [
-            'Precio promedio USDT/CLP (P2P)',
-            'Monto a cambiar (USD)',
-            'Monto que recibe el cliente (CLP)'
+            'USD a CLP',
+            'Monto a Cobrar (USD)',
+            'Comisión Aplicada (USD) (OneInfinite)',
+            'Tarifa Envío Binance (USDT)',
+            'Porcentaje de Pérdida Sobre Monto Original (%)',
+            'Monto Neto en USDT (Binance)',
+            'Monto CLP Obtenido',
+            'Valor Referencia (sin comisiones)',
+            'Pago Final del Cliente (CLP)',
+            'Comisión Total por Servicio (%)',
+            'Ganancia Total (CLP)',
+            'Margen Utilidad (%)',
         ],
         'Valor': [
             round(tipo_cambio_usdt_clp, 2),
             round(monto_usd, 2),
-            round(pago_cliente_deseado, 2)
-        ]
-    })
-
-    # Tabla 2
-    tabla2 = pd.DataFrame({
-        'Parámetro': [
-            'Pérdida del cliente (%)',
-            'Comisión total por servicio (%)',
-            'Margen utilidad (%)',
-            'Ganancia total (CLP)'
-            
-        ],
-        'Valor': [
+            round(comision_aplicada, 2),
+            round(tarifa_binance_usdt, 2),
+            round(porcentaje_perdida, 2),
+            round(monto_neto_usdt, 2),
+            round(monto_clp_obtenido, 2),
+            round(valor_referencia_clp, 2),
+            round(pago_cliente_deseado, 2),
             round(porcentaje_perdida_cliente_objetivo * 100, 2),
-            round(porcentaje_perdida, 2),  # ahora en %
+            round(ganancia_total, 2),
             round(margen_requerido * 100, 2),
-            round(ganancia_total, 2)
-            
         ]
     })
 
-    return tabla1, tabla2
+    return resultados.set_index('Parámetro')
 
-# Streamlit App
-st.set_page_config(page_title="Calculadora de Margen USDT", layout="centered")
-st.title("📊 Calculadora de Margen USDT - Binance P2P")
-
-st.markdown("Calcula cuánto recibirá el cliente y cuánto ganas tú al vender USDT por Binance P2P.")
-
-# Inputs
-monto_usd_input = st.number_input("Monto a recibir en USD:", min_value=1.0, value=100.0, step=10.0)
-st.caption("Se considera una comisión del 5.49% + 2 USDT de envío.")
-
-# Obtener tipo de cambio actual
-precio_p2p_promedio = obtener_precio_promedio_p2p_usdt_clp()
-
-# Calcular tablas
-tabla_1, tabla_2 = calcular_metricas(
-    monto_usd=monto_usd_input,
-    tipo_cambio_usdt_clp=precio_p2p_promedio
-)
-
-# Mostrar tablas
-st.subheader("📌 Resumen Transacción")
-st.dataframe(tabla_1.set_index('Parámetro'), use_container_width=True)
-
-st.subheader("📈 Detalles Financieros")
-st.dataframe(tabla_2.set_index('Parámetro'), use_container_width=True)
+# Mostrar resultados al presionar botón
+if st.button("Calcular"):
+    df_resultado = calcular_margen_para_perdida_objetivo(
+        monto_usd,
+        comision_porcentual,
+        tarifa_binance_usdt,
+        tipo_cambio_usdt_clp,
+        porcentaje_perdida_cliente_objetivo
+    )
+    st.subheader("📊 Resultados de la Conversión")
+    st.dataframe(df_resultado, use_container_width=True)
