@@ -1,81 +1,80 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Calculadora de Conversión USD a CLP", layout="centered")
+st.set_page_config(page_title="Calculadora TUCUPOENDOLAR.COM", layout="centered")
 
 st.title("💸 Calculadora de Conversión USD a CLP")
 st.markdown("""
-Esta calculadora te permite simular la conversión de USD a CLP considerando comisiones fijas y un porcentaje fijo de pérdida para el cliente.
+Simula la conversión de USD a CLP para que el cliente reciba el 85% del monto solicitado convertido al valor del dólar del minuto
 """)
 
 # Entradas del usuario
-monto_usd = st.number_input("Monto Solictado (USD)", min_value=1.0, value=100.0, step=1.0)
-tipo_cambio_usdt_clp = st.number_input("Valor actual del dólar", min_value=500.0, value=940.0, step=1.0)
+monto_usd = st.number_input("Monto Solicitado en USD", min_value=1.0, value=100.0, step=1.0)
+tipo_cambio_usdt_clp = st.number_input("USD a CLP", min_value=500.0, value=940.0, step=1.0)
 
 # Parámetros fijos
 comision_porcentual = 0.0549
 tarifa_binance_usdt = 2
-porcentaje_perdida_cliente_objetivo = 0.15
+porcentaje_pago_cliente = 0.85
 
-def calcular_margen_para_perdida_objetivo(
+def calcular_conversion(
     monto_usd,
     comision_porcentual,
     tarifa_binance_usdt,
     tipo_cambio_usdt_clp,
-    porcentaje_perdida_cliente_objetivo
+    porcentaje_pago_cliente
 ):
+    # Comisiones y pérdida
     comision_aplicada = monto_usd * comision_porcentual
     perdida_total_usd = comision_aplicada + tarifa_binance_usdt
-    porcentaje_perdida = (perdida_total_usd / monto_usd) * 100
 
+    # Neto recibido en Binance (USDT)
     monto_neto_usdt = monto_usd - perdida_total_usd
     monto_clp_obtenido = monto_neto_usdt * tipo_cambio_usdt_clp
-    valor_referencia_clp = monto_usd * tipo_cambio_usdt_clp
-    pago_cliente_deseado = valor_referencia_clp * (1 - porcentaje_perdida_cliente_objetivo)
-    margen_requerido = 1 - (pago_cliente_deseado / monto_clp_obtenido)
+
+    # Pago al cliente (85%)
+    pago_cliente_deseado = (monto_usd * porcentaje_pago_cliente) * tipo_cambio_usdt_clp
+
+    # Métricas
     ganancia_total = monto_clp_obtenido - pago_cliente_deseado
+    margen_requerido = ganancia_total / monto_clp_obtenido
 
-    resultados = pd.DataFrame({
-        'Parámetro': [
-            'USD a CLP',
-            'Monto a Cobrar (USD)',
-            'Comisión Aplicada (USD) (OneInfinite)',
-            'Tarifa Envío Binance (USDT)',
-            'Porcentaje de Pérdida Sobre Monto Original (%)',
-            'Monto Neto en USDT (Binance)',
-            'Monto CLP Obtenido',
-            'Valor Referencia (sin comisiones)',
-            'Pago Final del Cliente (CLP)',
-            'Comisión Total por Servicio (%)',
-            'Ganancia Total (CLP)',
-            'Margen Utilidad (%)',
-        ],
-        'Valor': [
-            round(tipo_cambio_usdt_clp, 2),
-            round(monto_usd, 2),
-            round(comision_aplicada, 2),
-            round(tarifa_binance_usdt, 2),
-            round(porcentaje_perdida, 2),
-            round(monto_neto_usdt, 2),
-            round(monto_clp_obtenido, 2),
-            round(valor_referencia_clp, 2),
-            round(pago_cliente_deseado, 2),
-            round(porcentaje_perdida_cliente_objetivo * 100, 2),
-            round(ganancia_total, 2),
-            round(margen_requerido * 100, 2),
-        ]
-    })
+    return {
+        'monto_usd': round(monto_usd, 2),
+        'tipo_cambio_usdt_clp': round(tipo_cambio_usdt_clp, 2),
+        'pago_cliente_deseado': round(pago_cliente_deseado, 2),
+        'ganancia_total': round(ganancia_total, 2),
+        'margen_requerido': round(margen_requerido * 100, 2)
+    }
 
-    return resultados.set_index('Parámetro')
-
-# Mostrar resultados al presionar botón
+# Mostrar resultados
 if st.button("Calcular"):
-    df_resultado = calcular_margen_para_perdida_objetivo(
+    resultado = calcular_conversion(
         monto_usd,
         comision_porcentual,
         tarifa_binance_usdt,
         tipo_cambio_usdt_clp,
-        porcentaje_perdida_cliente_objetivo
+        porcentaje_pago_cliente
     )
-    st.subheader("📊 Resultados de la Conversión")
-    st.dataframe(df_resultado, use_container_width=True)
+
+    # Tabla 1
+    tabla_1 = pd.DataFrame([{
+        'Monto a Cambiar USD': resultado['monto_usd'],
+        'USD/CLP': resultado['tipo_cambio_usdt_clp'],
+        'Monto a Recibir CLP': resultado['pago_cliente_deseado']
+    }])
+
+    # Tabla 2
+    tabla_2 = pd.DataFrame([{
+        'Monto USD': resultado['monto_usd'],
+        'Pago al Cliente CLP': resultado['pago_cliente_deseado'],
+        'Ganancia Total CLP': resultado['ganancia_total'],
+        'Margen Utilidad (%)': resultado['margen_requerido']
+    }])
+
+    st.subheader("📋 Tabla 1: Conversión básica")
+    st.dataframe(tabla_1, use_container_width=True)
+
+    st.subheader("📈 Tabla 2: Resultados de negocio")
+    st.dataframe(tabla_2, use_container_width=True)
+
