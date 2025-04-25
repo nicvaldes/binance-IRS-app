@@ -5,12 +5,12 @@ st.set_page_config(page_title="Calculadora TUCUPOENDOLAR.COM", layout="centered"
 
 st.title("💸 Calculadora de Conversión USD a CLP")
 st.markdown("""
-Simula la conversión de USD a CLP para que el cliente reciba el 85% del monto solicitado convertido al valor del dólar del minuto
+Simula la conversión de USD a CLP para que el cliente reciba el 85% del monto solicitado convertido al valor del dólar del minuto.
 """)
 
 # Entradas del usuario
-monto_usd = st.number_input("Monto Solicitado en USD", min_value=1.0, value=100.0, step=1.0)
-tipo_cambio_usdt_clp = st.number_input("USD a CLP", min_value=500.0, value=940.0, step=1.0)
+monto_usd = st.number_input("Monto en USD a transformar", min_value=1.0, value=100.0, step=1.0)
+tipo_cambio_usdt_clp = st.number_input("Valor actual del dólar (USDT a CLP)", min_value=500.0, value=940.0, step=1.0)
 
 # Parámetros fijos
 comision_porcentual = 0.0549
@@ -24,15 +24,15 @@ def calcular_conversion(
     tipo_cambio_usdt_clp,
     porcentaje_pago_cliente
 ):
-    # Comisiones y pérdida
+    # Comisiones
     comision_aplicada = monto_usd * comision_porcentual
     perdida_total_usd = comision_aplicada + tarifa_binance_usdt
 
-    # Neto recibido en Binance (USDT)
+    # USDT neto recibido en Binance
     monto_neto_usdt = monto_usd - perdida_total_usd
     monto_clp_obtenido = monto_neto_usdt * tipo_cambio_usdt_clp
 
-    # Pago al cliente (85%)
+    # Pago al cliente: 85%
     pago_cliente_deseado = (monto_usd * porcentaje_pago_cliente) * tipo_cambio_usdt_clp
 
     # Métricas
@@ -57,20 +57,22 @@ if st.button("Calcular"):
         porcentaje_pago_cliente
     )
 
-    # Tabla 1
-    tabla_1 = pd.DataFrame([{
-        'Monto a Cambiar USD': resultado['monto_usd'],
-        'USD/CLP': resultado['tipo_cambio_usdt_clp'],
-        'Monto a Recibir CLP': resultado['pago_cliente_deseado']
-    }])
+    # Tabla 1 (vertical)
+    tabla_1 = pd.DataFrame({
+        'Parámetro': ['Monto a Solicitar USD', 'USDT/CLP', 'Monto a Recibir (CLP)'],
+        'Valor': [resultado['monto_usd'], resultado['tipo_cambio_usdt_clp'], resultado['pago_cliente_deseado']]
+    })
 
-    # Tabla 2
-    tabla_2 = pd.DataFrame([{
-        'Monto USD': resultado['monto_usd'],
-        'Pago al Cliente CLP': resultado['pago_cliente_deseado'],
-        'Ganancia Total CLP': resultado['ganancia_total'],
-        'Margen Utilidad (%)': resultado['margen_requerido']
-    }])
+    # Tabla 2 (vertical)
+    tabla_2 = pd.DataFrame({
+        'Parámetro': ['Monto USD', 'Pago al Cliente (CLP)', 'Ganancia Total (CLP)', 'Margen Utilidad (%)'],
+        'Valor': [
+            resultado['monto_usd'],
+            resultado['pago_cliente_deseado'],
+            resultado['ganancia_total'],
+            resultado['margen_requerido']
+        ]
+    })
 
     st.subheader("📋 Tabla 1: Conversión básica")
     st.dataframe(tabla_1, use_container_width=True)
